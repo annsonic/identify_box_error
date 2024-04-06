@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "identify-box-error"
+version = "0.1.0"
+description = ""
+authors = ["annsonic <s86184@yahoo.com.tw>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+emojis = "^0.7.0"
+pathlib = "^1.0.1"
+tqdm = "^4.66.2"
+numpy = "^1.26.4"
+pillow = "^10.3.0"
+pyyaml = "^6.0.1"
+opencv-python = "^4.9.0.80"
+pytest = "^8.1.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
