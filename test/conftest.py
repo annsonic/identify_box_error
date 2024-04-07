@@ -1,16 +1,15 @@
-from PIL import Image
+from PIL import Image, ImageDraw
 import numpy as np
 from pathlib import Path
+import pytest
 import shutil
 import yaml
-
-import pytest
 
 from app.utils import DATASET_CACHE_VERSION
 from app.utils.parse import load_one_label_file
 
 TMP = Path(__file__).resolve().parent / "tmp"  # temp directory for test files
-IMG_SHAPE = (100, 100)
+IMG_SHAPE = (400, 400)
 
 
 class TextFilePreparer:
@@ -45,31 +44,15 @@ class TextFilePreparer:
 
 class FakeData:
     """
-    three_boxes: [(0.5, 0.5, 0.5, 0.52), (0.42, 0.4, 0.32, 0.48), (0.6, 0.55, 0.34, 0.34)]
-    ┌───────┐
-    │ ▂▂▂   │
-    │ ███▄▄ │
-    │   ███ │
-    └───────┘
-    two_boxes_positive: [(0.35, 0.52, 0.5, 0.2), (0.5, 0.55, 0.56, 0.18)]
-     ████▆
-     two_boxes_negative: [(0.5, 0.55, 0.6, 0.5), (0.35, 0.4, 0.5, 0.2)]
-     ████▆
-      ████
-
-    one_box: [(0.8, 0.7, 0.2, 0.3)]
-
     test_cases:
     1: empty
-    2: 1 true positive, 1 background, 1 bad location (iou=0.448, 0.407)
-    3: 1 wrong class, 2 missing
-    4: 1 wrong class location, 1 true positive, 1 duplicate
-    5: 1 true positive (iou=1)
-    6: 1 false positive (iou=0.25) => bad location
-    7: 1 false positive => background
+    2: 1 true positive, 1 background, 1 bad location (iou=1.0, 0.0, ?)
+    3: 1 wrong class, 2 missing (iou=1.0, 0.0, 0.0)
+    4: 1 wrong class location, 1 true positive, 1 duplicate (iou=?, 1.0, ?)
+    5: 2 true positive, 1 bad location, 1 missing (iou=?, 1.0, ?, 0.0)
     """
     def __init__(self):
-        self.num_images = 5
+        self.num_images = 0
         self.yaml_path = TMP / "insects.yaml"
         self.img_folder_path = TMP / "ground_truth" / "images" / "test"
         self.img_folder_path.mkdir(parents=True, exist_ok=True)
@@ -80,8 +63,7 @@ class FakeData:
         self.cache_path = TMP / "ground_truth" / "labels" / "test.cache"
 
         self.prepare_yaml()
-        self.prepare_txt()
-        self.prepare_image()
+        self.prepare_txt_img()
         self.prepare_cache()
 
     def prepare_yaml(self):
@@ -96,26 +78,49 @@ class FakeData:
         with open(yaml_path, "w") as f:
             yaml.safe_dump(json_data, f)
 
-    def prepare_txt(self):
+    def prepare_txt_img(self):
         truth_preparer = TextFilePreparer('ground_truth')
         guess_preparer = TextFilePreparer('predicted')
+        
+        data = [
+            ('1.txt', [], []),
+            ('2.txt', [(0, 0.3, 0.4, 0.2, 0.3), (0, 0.6, 0.55, 0.34, 0.34), (1, 0.6, 0.8, 0.4, 0.26)], [(0, 0.26, 0.6, 0.18, 0.24, 0.881), (0, 0.7, 0.3, 0.2, 0.4, 0.799), (1, 0.6, 0.8, 0.4, 0.26, 0.697)]),
+            ('3.txt', [(0, 0.4, 0.3, 0.2, 0.2), (0, 0.4, 0.6, 0.2, 0.2), (0, 0.7, 0.4, 0.2, 0.2)], [(1, 0.4, 0.3, 0.2, 0.2, 0.973)]),
+            ('4.txt', [(0, 0.3, 0.4, 0.2, 0.3), (0, 0.7, 0.4, 0.2, 0.2)], [(1, 0.26, 0.6, 0.18, 0.24, 0.881), (0, 0.7, 0.4, 0.2, 0.2, 0.852), (0, 0.68, 0.4, 0.2, 0.2, 0.835)]),
+            ('5.txt', [(0, 0.5, 0.4, 0.3, 0.3), (1, 0.4, 0.7, 0.2, 0.2), (1, 0.62, 0.84, 0.2, 0.2)], [(0, 0.42, 0.44, 0.28, 0.24, 0.968), (0, 0.7, 0.4, 0.2, 0.2, 0.567), (1, 0.5, 0.76, 0.5, 0.3, 0.685)]),
+        ]
+        self.num_images = len(data)
 
-        truth_preparer.create('1.txt', [])
-        guess_preparer.create('1.txt', [])
-        truth_preparer.create('2.txt', [(0, 0.3, 0.4, 0.2, 0.3), (0, 0.6, 0.55, 0.34, 0.34), (1, 0.6, 0.8, 0.4, 0.26)])
-        guess_preparer.create('2.txt', [(0, 0.26, 0.6, 0.18, 0.24, 0.881), (0, 0.7, 0.3, 0.2, 0.4, 0.799), (1, 0.6, 0.8, 0.4, 0.26, 0.697)])
-        truth_preparer.create('3.txt', [(0, 0.4, 0.3, 0.2, 0.2), (0, 0.4, 0.6, 0.2, 0.2), (0, 0.7, 0.4, 0.2, 0.2)])
-        guess_preparer.create('3.txt', [(1, 0.4, 0.3, 0.2, 0.2, 0.973)])
-        truth_preparer.create('4.txt', [(0, 0.3, 0.4, 0.2, 0.3), (0, 0.7, 0.4, 0.2, 0.2)])
-        guess_preparer.create('4.txt', [(1, 0.26, 0.6, 0.18, 0.24, 0.881), (0, 0.7, 0.4, 0.2, 0.2, 0.852), (0, 0.7, 0.4, 0.2, 0.2, 0.335)])
-        truth_preparer.create('5.txt', [(0, 0.5, 0.4, 0.3, 0.3), (1, 0.4, 0.7, 0.2, 0.2), (1, 0.62, 0.84, 0.2, 0.2)])
-        guess_preparer.create('5.txt', [(0, 0.42, 0.44, 0.28, 0.24, 0.968), (0, 0.7, 0.4, 0.2, 0.2, 0.567), (1, 0.5, 0.76, 0.5, 0.3, 0.685)])
+        for (txt_name, ground, guess) in data:
+            truth_preparer.create(txt_name, ground)
+            guess_preparer.create(txt_name, guess)
+            self.prepare_image(txt_name.replace('.txt', '.jpg'), ground, guess)
 
-    def prepare_image(self):
+    def prepare_image(self, file_name: str, ground: list[tuple], guess: list[tuple]):
+        def rectangle(box: tuple[float]):
+            x, y, w, h = box
+            x *= IMG_SHAPE[0]
+            y *= IMG_SHAPE[1]
+            w *= IMG_SHAPE[0]
+            h *= IMG_SHAPE[1]
+            dw = w / 2.0
+            dh = h / 2.0
+            return (x - dw), y - dh, x + dw, y + dh
+            
         # Create blank images
-        for i in range(1, self.num_images + 1):
-            im = Image.new("RGB", IMG_SHAPE, color='black')
-            im.save(self.img_folder_path / f"{i}.jpg")
+        im = Image.new("RGB", IMG_SHAPE, color='black')
+        # Create rectangle image 
+        painter = ImageDraw.Draw(im)
+        for cxywh in ground:
+            color = 'Blue' if cxywh[0] == 0 else 'White'
+            left, top, right, bottom = rectangle(cxywh[1:])
+            painter.rectangle((left,top,right,bottom), outline=color, width=3)
+        for cxywhf in guess:
+            color = 'Yellow' if cxywhf[0] == 0 else 'Green'
+            left, top, right, bottom = rectangle(cxywhf[1:5])
+            painter.rectangle((left,top,right,bottom), outline=color, width=1)
+        
+        im.save(self.img_folder_path / file_name)
 
     def prepare_cache(self):
         img_files = sorted(list(self.img_folder_path.glob("*.jpg")))
