@@ -46,10 +46,12 @@ class FakeData:
     """
     test_cases:
     1: empty
-    2: 1 true positive, 1 background, 1 bad location (iou=1.0, 0.0, ?)
+    2: 1 background, 1 bad location, 1 true positive (iou=0.033, 0.116, 1.0)
     3: 1 wrong class, 2 missing (iou=1.0, 0.0, 0.0)
-    4: 1 wrong class location, 1 true positive, 1 duplicate (iou=?, 1.0, ?)
-    5: 2 true positive, 1 bad location, 1 missing (iou=?, 1.0, ?, 0.0)
+    4: 1 wrong class location, 1 true positive, 1 duplicate (iou=0.113, 1.0, 0.818)
+    5: 1 background, 1 duplicate
+    6: 2 backgrounds
+    7: 1 true positive, 1 background, 1 bad location (iou=0.444, 0.08, 0.377)
     """
     def __init__(self):
         self.num_images = 0
@@ -84,10 +86,16 @@ class FakeData:
         
         data = [
             ('1.txt', [], []),
-            ('2.txt', [(0, 0.3, 0.4, 0.2, 0.3), (0, 0.6, 0.55, 0.34, 0.34), (1, 0.6, 0.8, 0.4, 0.26)], [(0, 0.26, 0.6, 0.18, 0.24, 0.881), (0, 0.7, 0.3, 0.2, 0.4, 0.799), (1, 0.6, 0.8, 0.4, 0.26, 0.697)]),
-            ('3.txt', [(0, 0.4, 0.3, 0.2, 0.2), (0, 0.4, 0.6, 0.2, 0.2), (0, 0.7, 0.4, 0.2, 0.2)], [(1, 0.4, 0.3, 0.2, 0.2, 0.973)]),
-            ('4.txt', [(0, 0.3, 0.4, 0.2, 0.3), (0, 0.7, 0.4, 0.2, 0.2)], [(1, 0.26, 0.6, 0.18, 0.24, 0.881), (0, 0.7, 0.4, 0.2, 0.2, 0.852), (0, 0.68, 0.4, 0.2, 0.2, 0.835)]),
-            ('5.txt', [(0, 0.5, 0.4, 0.3, 0.3), (1, 0.4, 0.7, 0.2, 0.2), (1, 0.62, 0.84, 0.2, 0.2)], [(0, 0.42, 0.44, 0.28, 0.24, 0.968), (0, 0.7, 0.4, 0.2, 0.2, 0.567), (1, 0.5, 0.76, 0.5, 0.3, 0.685)]),
+            ('2.txt', [(0, 0.3, 0.4, 0.2, 0.3), (0, 0.6, 0.55, 0.34, 0.34), (1, 0.6, 0.8, 0.4, 0.26)], 
+                [(0, 0.22, 0.64, 0.18, 0.24, 0.881), (0, 0.7, 0.3, 0.2, 0.4, 0.799), (1, 0.6, 0.8, 0.4, 0.26, 0.697)]),
+            ('3.txt', [(0, 0.4, 0.3, 0.2, 0.2), (0, 0.4, 0.6, 0.2, 0.2), (0, 0.7, 0.4, 0.2, 0.2)], 
+                [(1, 0.4, 0.3, 0.2, 0.2, 0.973)]),
+            ('4.txt', [(0, 0.3, 0.4, 0.2, 0.3), (0, 0.7, 0.4, 0.2, 0.2)], 
+                [(1, 0.26, 0.6, 0.18, 0.24, 0.881), (0, 0.7, 0.4, 0.2, 0.2, 0.852), (0, 0.68, 0.4, 0.2, 0.2, 0.835)]),
+            ('5.txt', [], [(0, 0.7, 0.4, 0.2, 0.2, 0.852), (0, 0.68, 0.4, 0.2, 0.2, 0.835)]),
+            ('6.txt', [], [(0, 0.7, 0.4, 0.2, 0.2, 0.852), (1, 0.68, 0.4, 0.2, 0.2, 0.835)]),
+            ('7.txt', [(0, 0.5, 0.4, 0.3, 0.3), (1, 0.4, 0.74, 0.2, 0.3), (1, 0.62, 0.84, 0.2, 0.3)], 
+                [(0, 0.42, 0.44, 0.28, 0.24, 0.968), (0, 0.7, 0.4, 0.2, 0.2, 0.567), (1, 0.5, 0.82, 0.38, 0.3, 0.685)]),
         ]
         self.num_images = len(data)
 
@@ -114,11 +122,11 @@ class FakeData:
         for cxywh in ground:
             color = 'Blue' if cxywh[0] == 0 else 'White'
             left, top, right, bottom = rectangle(cxywh[1:])
-            painter.rectangle((left,top,right,bottom), outline=color, width=3)
+            painter.rectangle((left,top,right,bottom), outline=color, width=6)
         for cxywhf in guess:
             color = 'Yellow' if cxywhf[0] == 0 else 'Green'
             left, top, right, bottom = rectangle(cxywhf[1:5])
-            painter.rectangle((left,top,right,bottom), outline=color, width=1)
+            painter.rectangle((left,top,right,bottom), outline=color, width=2)
         
         im.save(self.img_folder_path / file_name)
 

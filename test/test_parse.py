@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from conftest import TMP
+from conftest import TMP, IMG_SHAPE
 
 
 def test_yaml_load(session_setup):
@@ -18,12 +18,12 @@ def partial_expected_cache_content():
     return [
         {
             'im_file': str(TMP / "ground_truth" / "images" / "test" / '1.jpg'),
-            'shape': (100, 100), 'cls': np.array([]), 'bboxes': np.array([]),
+            'shape': IMG_SHAPE, 'cls': np.array([]), 'bboxes': np.array([]),
             'normalized': True, 'bbox_format': 'xyxy'
         },
         {
             'im_file': str(TMP / "ground_truth" / "images" / "test" / '2.jpg'),
-            'shape': (100, 100), 'cls': np.array([0, 0, 1], dtype=np.int64), 'bboxes': np.array([[0.2, 0.25, 0.4, 0.55], [0.43, 0.38, 0.77, 0.72], [0.4, 0.67, 0.8, 0.93]], dtype=np.float64),
+            'shape': IMG_SHAPE, 'cls': np.array([0, 0, 1], dtype=np.int64), 'bboxes': np.array([[0.2, 0.25, 0.4, 0.55], [0.43, 0.38, 0.77, 0.72], [0.4, 0.67, 0.8, 0.93]], dtype=np.float64),
             'normalized': True, 'bbox_format': 'xyxy'
         },
     ]
@@ -62,7 +62,7 @@ def partial_expected_predict_txt_content():
             'missing_box_errors': None},
         '4.txt': {
             'cls': np.array([1, 0, 0]),
-            'bboxes': np.array([[0.17, 0.48, 0.35, 0.72], [0.6 , 0.3, 0.8, 0.5], [0.6, 0.3, 0.8, 0.5]]),
+            'bboxes': np.array([[0.17, 0.48, 0.35, 0.72], [0.6 , 0.3, 0.8, 0.5], [0.58, 0.3 , 0.78, 0.5]]),
             'normalized': True,
             'bbox_format': 'xyxy',
             'bad_box_errors': None, 
@@ -86,7 +86,7 @@ def partial_expected_fetcher_output():
     return [
     ({
             'im_file': str(TMP / "ground_truth" / "images" / "test" / '1.jpg'),
-            'shape': (100, 100),
+            'shape': IMG_SHAPE,
             'cls': np.array([]),
             'bboxes': np.array([]),
             'normalized': True,
@@ -102,7 +102,7 @@ def partial_expected_fetcher_output():
     }),
     ({
             'im_file': str(TMP / "ground_truth" / "images" / "test" / '2.jpg'),
-            'shape': (100, 100),
+            'shape': IMG_SHAPE,
             'cls': np.array([0, 0, 1]),
             'bboxes': np.array([[0.2, 0.25, 0.4, 0.55], [0.43, 0.38, 0.77, 0.72], [0.4 , 0.67, 0.8, 0.93]]),
             'normalized': True,
