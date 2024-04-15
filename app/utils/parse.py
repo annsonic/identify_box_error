@@ -136,9 +136,11 @@ def load_one_label_file(file: str, has_conf=False
     classes, boxes, confs = np.empty((0, 1)), np.empty((0, 1)), np.empty((0, 1))
     if data.size != 0:
         classes = data[:, 0].astype(int)
-        boxes = data[:, 1:5]
         if has_conf:
-            confs = data[:, 5]
+            boxes = data[:, 1:-1]
+            confs = data[:, -1]
+        else:
+            boxes = data[:, 1:]
     if has_conf:
         return classes, boxes, confs
     return classes, boxes
