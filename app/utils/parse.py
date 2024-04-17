@@ -97,6 +97,7 @@ def cache_load(subset: str, yaml_data: dict) -> list[dict]:
         'im_file': str -> absolute path
         'normalized': True
         'shape': tuple(int, int) -> (height, width)
+        'segments': list of ndarray(4, 2) in float. The vertices are arranged in a clockwise order.
     }
     n is the number of bounding boxes in the image.
     """
@@ -146,11 +147,12 @@ def load_one_label_file(file: str, has_conf=False
     return classes, boxes
 
 
-def txt_load(folder: str, has_conf=False) -> dict[str, dict]:
+def txt_load(folder: str, has_conf=False, is_obb: bool = False) -> dict[str, dict]:
     """ Given a folder of text files, parse the content to a list of dict.
     Args:
         folder (str): path of the label folder.
         has_conf (bool): if True, read the `conf` confidence score.
+        is_obb (bool): if True, load the segments instead of boxes for oriented bounding boxes.
     Returns:
         nested dict
             The content of each row in the dict is:
@@ -159,6 +161,7 @@ def txt_load(folder: str, has_conf=False) -> dict[str, dict]:
                 'bboxes': ndarray(n, 4) in float
                 'cls': ndarray(n, 1) in float
                 'normalized': True
+                'segments': list of ndarray(4, 2) in float. The vertices are arranged in a clockwise order.
             }
     n is the number of bounding boxes in the image.
     """
@@ -171,9 +174,17 @@ def txt_load(folder: str, has_conf=False) -> dict[str, dict]:
             labels[str(file.name)]["conf"] = confs
         else:
             cls, bboxes = load_one_label_file(str(file), has_conf)
+        if is_obb:
+            labels[str(file.name)] |= {
+                "bboxes": np.empty((0,)),
+                "segments": [box for box in bboxes.reshape(-1, 4, 2)],
+            }
+        else:
+            labels[str(file.name)] |= {
+                "bboxes": xywh2xyxy(bboxes) if bboxes.shape[0] > 0 else np.empty((0,)),
+            }
         labels[str(file.name)] |= {
             "cls": cls,
-            "bboxes": xywh2xyxy(bboxes) if bboxes.shape[0] > 0 else np.empty((0,)),
             "normalized": True,
             "bbox_format": "xyxy",
             "bad_box_errors": [],  # list item: type of error
@@ -183,11 +194,20 @@ def txt_load(folder: str, has_conf=False) -> dict[str, dict]:
     return labels
 
 
-def truth_prediction_fetcher(yaml_path: str, subset: str, predict_folder_path: str
+def truth_prediction_fetcher(yaml_path: str, subset: str, predict_folder_path: str, is_obb: bool = False
                              ) -> Generator[tuple[dict, dict], None, None]:
+    """
+    Args:
+        yaml_path (str): path of the yaml file.
+        subset (str): range['train', 'val', 'test']
+        predict_folder_path (str): path of the prediction folder which stores the inference text files.
+        is_obb (bool): if True, load the segments instead of boxes for oriented bounding boxes.
+    Returns:
+        tuple(dict, dict): (ground truth, prediction)
+    """
     yaml_data = yaml_load(yaml_path)
     facts = cache_load(subset, yaml_data)
-    guesses = txt_load(predict_folder_path, has_conf=True)
+    guesses = txt_load(predict_folder_path, has_conf=True, is_obb=is_obb)
     assert len(facts) == len(guesses), f"Number of files in {subset} and predictions do not match."
 
     for fact in facts:
