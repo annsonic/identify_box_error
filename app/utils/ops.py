@@ -21,3 +21,32 @@ def xywh2xyxy(x):
     y[..., 2] = x[..., 0] + dw  # bottom right x
     y[..., 3] = x[..., 1] + dh  # bottom right y
     return y
+
+
+def denormalize_segment(segments: list[np.array], shape: tuple[int, int]) -> np.array:
+    """
+    Args:
+        segments (list[np.array]): A list of numpy arrays representing the segments.
+        shape (tuple[int, int]): The shape(height, width) of the image containing the segments.
+    Returns:
+        list[np.array]: A list of numpy arrays representing the denormalized segments.
+    """
+    segments = np.array(segments)
+    segments[:, :, 0] *= shape[0]
+    segments[:, :, 1] *= shape[1]
+    return segments
+
+
+def sort_vertices_counter_clockwise(vertices: np.array) -> np.array:
+    """
+    Args:
+        vertices (np.array): shape (4, 2)
+    Returns:
+        np.array: shape (4, 2), vertices sorted in counter-clockwise order.
+    """
+    # Calculate the centroid
+    x0, y0 = np.mean(vertices, axis=0)
+    # Calculate the angle
+    angles = np.arctan2(vertices[:, 1] - y0, vertices[:, 0] - x0)
+    # Sort the vertices based on the angles in counter-clockwise order
+    return vertices[np.argsort(angles)]
