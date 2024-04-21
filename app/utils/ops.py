@@ -37,16 +37,20 @@ def denormalize_segment(segments: list[np.array], shape: tuple[int, int]) -> np.
     return segments
 
 
-def sort_vertices_counter_clockwise(vertices: np.array) -> np.array:
+def sort_counter_clockwise_in_numpy_coord(vertices: np.array) -> np.array:
     """
     Args:
         vertices (np.array): shape (4, 2)
     Returns:
         np.array: shape (4, 2), vertices sorted in counter-clockwise order.
+
+    In the numpy coordinate system, the result is in counter-clockwise order
+    In the OpenCV coordinate system, the result is in clockwise order.
+    Thus, the result matches the DOTA annotation.
     """
     # Calculate the centroid
     x0, y0 = np.mean(vertices, axis=0)
     # Calculate the angle
-    angles = np.arctan2(vertices[:, 1] - y0, vertices[:, 0] - x0)
-    # Sort the vertices based on the angles in counter-clockwise order
-    return vertices[np.argsort(angles)]
+    radians = np.arctan2(vertices[:, 1] - y0, vertices[:, 0] - x0)
+    # Sort the vertices based on the angles in ascending order
+    return vertices[np.argsort(radians)]

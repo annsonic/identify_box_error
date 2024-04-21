@@ -8,7 +8,7 @@ import numpy as np
 import yaml
 
 from app.utils import (ROOT, DATASET_CACHE_VERSION)
-from app.utils.ops import xywh2xyxy
+from app.utils.ops import xywh2xyxy, sort_counter_clockwise_in_numpy_coord
 
 
 def check_class_names(names: Union[list, dict]) -> dict:
@@ -81,11 +81,12 @@ def load_dataset_cache_file(path: Path) -> dict:
     return cache
 
 
-def cache_load(subset: str, yaml_data: dict) -> list[dict]:
+def cache_load(subset: str, yaml_data: dict, is_obb: bool = False) -> list[dict]:
     """ Load dataset cache file according to the yaml_data.
     Args:
         subset (str): range['train', 'val', 'test']
         yaml_data (dict): accepts the output of the function `yaml_load`
+        is_obb (bool): if True, load the segments instead of boxes for oriented bounding boxes.
     Returns:
         list of dict
 
@@ -97,7 +98,7 @@ def cache_load(subset: str, yaml_data: dict) -> list[dict]:
         'im_file': str -> absolute path
         'normalized': True
         'shape': tuple(int, int) -> (height, width)
-        'segments': list of ndarray(4, 2) in float. The vertices are arranged in a clockwise order.
+        'segments': list of ndarray(4, 2) in float. The vertices are arranged in a counter-clockwise order.
     }
     n is the number of bounding boxes in the image.
     """
@@ -110,9 +111,12 @@ def cache_load(subset: str, yaml_data: dict) -> list[dict]:
     # Read cache
     [cache.pop(k) for k in ("hash", "version", "msgs") if k in cache.keys()]  # remove items
     for data in cache["labels"]:
-        data['bboxes'] = xywh2xyxy(data['bboxes']) if data['bboxes'].shape[0] > 0 else np.empty((0,))
         data['bbox_format'] = "xyxy"
         data['cls'] = data['cls'].astype(int)
+        if is_obb:
+            data['segments'] = [sort_counter_clockwise_in_numpy_coord(box) for box in data['segments']]
+        else:
+            data['bboxes'] = xywh2xyxy(data['bboxes']) if data['bboxes'].shape[0] > 0 else np.empty((0,))
     return cache["labels"]
 
 
@@ -161,7 +165,7 @@ def txt_load(folder: str, has_conf=False, is_obb: bool = False) -> dict[str, dic
                 'bboxes': ndarray(n, 4) in float
                 'cls': ndarray(n, 1) in float
                 'normalized': True
-                'segments': list of ndarray(4, 2) in float. The vertices are arranged in a clockwise order.
+                'segments': list of ndarray(4, 2) in float. The vertices are arranged in a counter-clockwise order.
             }
     n is the number of bounding boxes in the image.
     """
@@ -177,7 +181,7 @@ def txt_load(folder: str, has_conf=False, is_obb: bool = False) -> dict[str, dic
         if is_obb:
             labels[str(file.name)] |= {
                 "bboxes": np.empty((0,)),
-                "segments": [box for box in bboxes.reshape(-1, 4, 2)],
+                "segments": [sort_counter_clockwise_in_numpy_coord(box) for box in bboxes.reshape(-1, 4, 2)],
             }
         else:
             labels[str(file.name)] |= {
@@ -206,7 +210,7 @@ def truth_prediction_fetcher(yaml_path: str, subset: str, predict_folder_path: s
         tuple(dict, dict): (ground truth, prediction)
     """
     yaml_data = yaml_load(yaml_path)
-    facts = cache_load(subset, yaml_data)
+    facts = cache_load(subset, yaml_data, is_obb=is_obb)
     guesses = txt_load(predict_folder_path, has_conf=True, is_obb=is_obb)
     assert len(facts) == len(guesses), f"Number of files in {subset} and predictions do not match."
 

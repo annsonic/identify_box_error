@@ -56,7 +56,7 @@ def test_cache_load(session_setup, box_type: str):
     from app.utils.parse import yaml_load, cache_load
 
     yaml_data = yaml_load(str(pytest.yaml_path))
-    output = cache_load("test", yaml_data)
+    output = cache_load("test", yaml_data, is_obb=(box_type == 'rotated'))
     expected = partial_expected_cache_content()
     for index in [0, 1]:
         assert output[index]["im_file"] == expected[index]["im_file"]

@@ -142,10 +142,11 @@ def obb_iou(segment1: list[np.array], segment2: list[np.array], eps=1e-7) -> np.
 
     area_1 = np.array([polygon_area(segment) for segment in segment1])
     area_2 = np.array([polygon_area(segment) for segment in segment2])
+    # Tile the areas to shape (m, n)
+    area_1 = np.tile(area_1[:, None], (1, len(segment2)))
+    area_2 = np.tile(area_2[None, :], (len(segment1), 1))
     intersection = np.array([[
-        polygon_intersection_area(segment1[i], segment2[j]) for j in range(len(segment2))]
-                             for i in range(len(segment1))])
-    print(f'{area_1=}')
-    print(f'{area_2=}')
-    print(f'{intersection=}')
+        polygon_intersection_area(seg1, seg2) for seg2 in segment2]
+                             for seg1 in segment1])
+
     return intersection / (area_1 + area_2 + eps - intersection)

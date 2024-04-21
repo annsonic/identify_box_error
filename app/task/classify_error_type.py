@@ -1,7 +1,6 @@
 import numpy as np
 
-
-from app.utils.metrics import bbox_ioa
+from app.utils.metrics import bbox_ioa, obb_iou
 
 
 class Annotation:
@@ -28,17 +27,30 @@ IOU_BG_TH = 0.1  # IoU < this threshold is a background
 
 
 class BoxErrorTypeAnalyzer:
-    def __init__(self, gt_data: dict, pd_data: dict):
+    def __init__(self, gt_data: dict, pd_data: dict, is_obb: bool = False):
+
         self.gt_data = gt_data
         self.pd_data = pd_data
-        self.num_gt, self.num_pd = gt_data['bboxes'].shape[0], pd_data['bboxes'].shape[0]
+        if is_obb:
+            self.num_gt, self.num_pd = len(gt_data['segments']), len(pd_data['segments'])
+        else:
+            self.num_gt, self.num_pd = gt_data['bboxes'].shape[0], pd_data['bboxes'].shape[0]
         # Initialize the storage
         self.pd_data['bad_box_errors'] = [None] * self.num_pd
         self.matched_gt = set()  # item: index of the ground truth box
 
-        self.iou_matrix = None
+        self.iou_matrix = None  # dim: (num_gt, num_pd)
         if self.num_gt != 0 and self.num_pd != 0:
-            self.iou_matrix = bbox_ioa(gt_data['bboxes'], pd_data['bboxes'], iou=True)  # Output dim: (num_gt, num_pd)
+            if is_obb:
+                self.iou_matrix = obb_iou(gt_data['segments'], pd_data['segments'])
+            else:
+                self.iou_matrix = bbox_ioa(gt_data['bboxes'], pd_data['bboxes'], iou=True)
+        # self.iou_between_prediction dim: (num_pd, num_pd)
+        if self.num_pd != 0:
+            if is_obb:
+                self.iou_between_prediction = obb_iou(pd_data['segments'], pd_data['segments'])
+            else:
+                self.iou_between_prediction = bbox_ioa(self.pd_data['bboxes'], self.pd_data['bboxes'], iou=True)
 
     def true_positive_or_wrong_class(self, index_gt: int):
         current_row_iou = self.iou_matrix[index_gt]
