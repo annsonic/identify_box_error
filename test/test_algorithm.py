@@ -25,21 +25,21 @@ def get_expected_answer(file_name: str):
         '1.jpg': {
             'bad_box_errors': [],
             'missing_box_errors': []
-        }, 
+        },
         '2.jpg': {
             'bad_box_errors': [BACKGROUND, BAD_LOCATION, TRUE_POSITIVE],
             'missing_box_errors': [0]
-        }, 
+        },
         '3.jpg': {
             'bad_box_errors': [WRONG_CLASS],
             'missing_box_errors': [1, 2]
-        }, 
+        },
         '4.jpg': {
             'bad_box_errors': [WRONG_CLASS_LOCATION, TRUE_POSITIVE, DUPLICATE],
             'missing_box_errors': []
-        }, 
+        },
         '5.jpg': {
-            'bad_box_errors': [BACKGROUND, DUPLICATE],
+            'bad_box_errors': [DUPLICATE, BACKGROUND, DUPLICATE],
             'missing_box_errors': []
         },
         '6.jpg': {
@@ -53,13 +53,14 @@ def get_expected_answer(file_name: str):
     }[file_name]
 
 
-@pytest.mark.parametrize("box_type", ['regular'])
+@pytest.mark.parametrize("box_type", ['regular', 'rotated'])
 def test_algorithm(session_setup, box_type: str):
-    fetcher = truth_prediction_fetcher(str(pytest.yaml_path), "test", str(pytest.predict_folder_path))
+    fetcher = truth_prediction_fetcher(str(pytest.yaml_path), "test", str(pytest.predict_folder_path),
+                                       is_obb=(box_type == 'rotated'))
     
     for _ in range(7):
         fact, guess = next(fetcher)
-        BoxErrorTypeAnalyzer(fact, guess).analyze()
+        BoxErrorTypeAnalyzer(fact, guess, is_obb=(box_type == 'rotated')).analyze()
 
         expected = get_expected_answer(Path(fact['im_file']).name)
         assert len(guess['bad_box_errors']) == len(expected['bad_box_errors'])
@@ -75,25 +76,32 @@ def test_algorithm(session_setup, box_type: str):
     (np.array([[50, 100], [50, 0], [150, 0], [150, 100]]), np.array([[60, 40], [50, 30], [40, 40], [50, 50]]), 100.0),
 ])
 def test_polygon_intersection_area(box1: np.array, box2: np.array, answer: float):
-    from app.utils.ops import sort_vertices_counter_clockwise
+    from app.utils.ops import sort_counter_clockwise_in_numpy_coord
     from app.utils.metrics import polygon_intersection_area
 
-    vertices_a = sort_vertices_counter_clockwise(box1)
-    vertices_b = sort_vertices_counter_clockwise(box2)
+    vertices_a = sort_counter_clockwise_in_numpy_coord(box1)
+    vertices_b = sort_counter_clockwise_in_numpy_coord(box2)
     assert polygon_intersection_area(vertices_a, vertices_b) == answer
 
 
-@pytest.mark.parametrize("box1, box2, answer", [
-    (np.array([[0, 100], [0, 0], [100, 0], [100, 100]]), np.array([[50, 0], [0, 0], [0, 50], [50, 50]]), 0.25),
-    (np.array([[50, 100], [50, 0], [150, 0], [150, 100]]), np.array([[50, 0], [0, 0], [0, 50], [50, 50]]), 0.0),
-    (np.array([[50, 100], [50, 0], [150, 0], [150, 100]]), np.array([[100, 50], [0, 50], [0, 0], [100, 0]]), 0.2),
-    (np.array([[50, 100], [50, 0], [150, 0], [150, 100]]), np.array([[60, 40], [50, 30], [40, 40], [50, 50]]), 0.00990099),
+@pytest.mark.parametrize("segment1, segment2, answer", [
+    ([
+         np.array([[0, 100], [0, 0], [100, 0], [100, 100]]),
+         np.array([[50, 80], [50, 0], [150, 0], [150, 80]]),
+         np.array([[50, 0], [0, 0], [0, 50], [50, 50]])],
+     [
+         np.array([[50, 0], [0, 0], [0, 50], [50, 50]]),
+         np.array([[50, 0], [0, 0], [0, 50], [50, 50]]),
+         np.array([[100, 50], [0, 50], [0, 0], [100, 0]]),
+         np.array([[60, 40], [50, 30], [40, 40], [50, 50]])],
+     np.array([[0.25, 0.25, 0.5, 0.02],
+               [0, 0, 0.23809524, 0.01234568],
+               [1, 1, 0.5, 0.03846154]])),
 ])
-def test_obb_iou(box1: np.array, box2: np.array, answer: float):
-    from app.utils.ops import sort_vertices_counter_clockwise
+def test_obb_iou(segment1: list[np.array], segment2: list[np.array], answer: np.array):
+    from app.utils.ops import sort_counter_clockwise_in_numpy_coord
     from app.utils.metrics import obb_iou
 
-    vertices_a = sort_vertices_counter_clockwise(box1)
-    vertices_b = sort_vertices_counter_clockwise(box2)
-
-    assert obb_iou([vertices_a], [vertices_b])[0][0] == pytest.approx(answer, abs=1e-7)
+    vertices_a = [sort_counter_clockwise_in_numpy_coord(box1) for box1 in segment1]
+    vertices_b = [sort_counter_clockwise_in_numpy_coord(box2) for box2 in segment2]
+    assert np.allclose(obb_iou(vertices_a, vertices_b), answer)

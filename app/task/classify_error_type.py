@@ -58,13 +58,14 @@ class BoxErrorTypeAnalyzer:
             self.matched_gt.add(index_gt)
 
     def find_duplicate(self):
-        iou_between_prediction = bbox_ioa(self.pd_data['bboxes'], self.pd_data['bboxes'], iou=True)
         indices = np.triu_indices(self.num_pd, k=1)
-        candidates = np.where(iou_between_prediction[indices] > 0.5)[0]
-        for candidate in candidates:
-            index_original, index_copy = indices[0][candidates].item(), indices[1][candidates].item()
-            if self.pd_data['cls'][index_original] == self.pd_data['cls'][index_copy]:
-                self.pd_data['bad_box_errors'][index_copy] = DUPLICATE
+        duplicates = np.where(self.iou_between_prediction[indices] > 0.5)[0]
+        for candidate in duplicates:
+            index_1, index_2 = indices[0][candidate].item(), indices[1][candidate].item()
+            if self.pd_data['cls'][index_1] != self.pd_data['cls'][index_2]:
+                continue
+            index_duplicate = index_1 if self.pd_data['conf'][index_2] > self.pd_data['conf'][index_1] else index_2
+            self.pd_data['bad_box_errors'][index_duplicate] = DUPLICATE
 
     def complex_case(self):
         # Iterate from the ground truth side
