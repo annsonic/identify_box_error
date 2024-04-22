@@ -70,14 +70,25 @@ class BoxErrorTypeAnalyzer:
             self.matched_gt.add(index_gt)
 
     def find_duplicate(self):
-        indices = np.triu_indices(self.num_pd, k=1)
-        duplicates = np.where(self.iou_between_prediction[indices] > 0.5)[0]
-        for candidate in duplicates:
-            index_1, index_2 = indices[0][candidate].item(), indices[1][candidate].item()
-            if self.pd_data['cls'][index_1] != self.pd_data['cls'][index_2]:
+        # Separate the boxes into class groups
+        class_box_mapper = {cls: [] for cls in set(self.pd_data['cls'])}  # key: class, value: list of box indices
+        for index, cls in enumerate(self.pd_data['cls']):
+            class_box_mapper[cls].append(index)
+        # Find the boxes which have IoU > 0.5 with each other
+        masks = np.triu_indices(self.num_pd, k=1)  # Exclude the diagonal of the matrix
+        candidates = np.where(self.iou_between_prediction[masks] > 0.5)[0]  # value is the index of the flattened mask
+        # Compare the confidence of the grouped boxes
+        for cls in class_box_mapper:
+            if len(class_box_mapper[cls]) < 2:
                 continue
-            index_duplicate = index_1 if self.pd_data['conf'][index_2] > self.pd_data['conf'][index_1] else index_2
-            self.pd_data['bad_box_errors'][index_duplicate] = DUPLICATE
+            scores = [self.pd_data['conf'][index] for index in class_box_mapper[cls]]
+            index_main = class_box_mapper[cls][np.argmax(scores)]
+            for candidate in candidates:
+                index_1, index_2 = masks[0][candidate].item(), masks[1][candidate].item()
+                if index_1 == index_main:
+                    self.pd_data['bad_box_errors'][index_2] = DUPLICATE
+                if index_2 == index_main:
+                    self.pd_data['bad_box_errors'][index_1] = DUPLICATE
 
     def complex_case(self):
         # Iterate from the ground truth side
@@ -106,7 +117,8 @@ class BoxErrorTypeAnalyzer:
         """ Compare the prediction with ground truth and classify the error type.
         The error type is stored in the `error_types` field of the prediction data.
         """
-        if self.num_pd:
+        # We need to find the duplicates first, in-case num_gt = 0 and exits without checking the predicted boxes
+        if self.num_pd > 1:
             self.find_duplicate()
         # Corner cases: no ground truth and no prediction
         if self.num_gt == 0 and self.num_pd == 0:

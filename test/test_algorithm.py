@@ -39,7 +39,7 @@ def get_expected_answer(file_name: str):
             'missing_box_errors': []
         },
         '5.jpg': {
-            'bad_box_errors': [DUPLICATE, BACKGROUND, DUPLICATE],
+            'bad_box_errors': [DUPLICATE, BACKGROUND, DUPLICATE, BACKGROUND, DUPLICATE],
             'missing_box_errors': []
         },
         '6.jpg': {
