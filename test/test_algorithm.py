@@ -105,3 +105,32 @@ def test_obb_iou(segment1: list[np.array], segment2: list[np.array], answer: np.
     vertices_a = [sort_counter_clockwise_in_numpy_coord(box1) for box1 in segment1]
     vertices_b = [sort_counter_clockwise_in_numpy_coord(box2) for box2 in segment2]
     assert np.allclose(obb_iou(vertices_a, vertices_b), answer)
+
+
+def expect_parse(file_name: str):
+    return {
+        '1.jpg': [],
+        '2.jpg': [
+            {'image_file_name': '2.jpg', 'index': 0, 'object_class': 0, 'error_type': 'background'},
+            {'image_file_name': '2.jpg', 'index': 1, 'object_class': 0, 'error_type': 'bad_location'},
+            {'image_file_name': '2.jpg', 'index': 2, 'object_class': 1, 'error_type': 'true_positive'},
+            {'image_file_name': '2.jpg', 'index': 0, 'object_class': 0, 'error_type': 'missing'}
+        ],
+    }[file_name]
+
+
+@pytest.mark.parametrize("box_type", ['regular'])
+def test_parse_analysis_results(session_setup, box_type: str):
+    fetcher = truth_prediction_fetcher(str(pytest.yaml_path), "test", str(pytest.predict_folder_path),
+                                       is_obb=(box_type == 'rotated'))
+
+    for _ in range(2):
+        fact, guess = next(fetcher)
+        analyzer = BoxErrorTypeAnalyzer(fact, guess, is_obb=(box_type == 'rotated'))
+        analyzer.analyze()
+        outputs = analyzer.parse_analysis_results()
+        expects = expect_parse(Path(fact['im_file']).name)
+
+        assert len(outputs) == len(expects)
+        for pd, gd in zip(outputs, expects):
+            assert pd == gd

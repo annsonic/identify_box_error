@@ -1,4 +1,5 @@
 import numpy as np
+from pathlib import Path
 
 from app.utils.metrics import bbox_ioa, obb_iou
 
@@ -27,10 +28,10 @@ IOU_BG_TH = 0.1  # IoU < this threshold is a background
 
 
 class BoxErrorTypeAnalyzer:
+    """ Given a ground truth file and a prediction file, analyze the error type of each predicted box."""
     def __init__(self, gt_data: dict, pd_data: dict, is_obb: bool = False):
 
-        self.gt_data = gt_data
-        self.pd_data = pd_data
+        self.gt_data, self.pd_data = gt_data, pd_data
         if is_obb:
             self.num_gt, self.num_pd = len(gt_data['segments']), len(pd_data['segments'])
         else:
@@ -112,6 +113,25 @@ class BoxErrorTypeAnalyzer:
             self.matched_gt.add(index_gt)
         if self.num_gt:
             self.pd_data['missing_box_errors'] = sorted(list(set(range(self.num_gt)) - self.matched_gt))
+
+    def parse_analysis_results(self) -> list[dict]:
+        """ Format the results for the class Recorder to write to the csv file """
+        results = []
+        for index, cls in enumerate(self.pd_data['cls']):
+            results.append({
+                'image_file_name': Path(self.gt_data['im_file']).name,
+                'index': index,
+                'object_class': cls,
+                'error_type': self.pd_data['bad_box_errors'][index].name
+            })
+        for index in self.pd_data['missing_box_errors']:
+            results.append({
+                'image_file_name': Path(self.gt_data['im_file']).name,
+                'index': index,
+                'object_class': self.gt_data['cls'][index],
+                'error_type': MISSING.name
+            })
+        return results
 
     def analyze(self):
         """ Compare the prediction with ground truth and classify the error type.
