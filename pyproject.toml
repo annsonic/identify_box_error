@@ -16,6 +16,8 @@ pillow = "^10.3.0"
 pyyaml = "^6.0.1"
 opencv-python = "^4.9.0.80"
 pytest = "^8.1.1"
+matplotlib = "^3.8.4"
+pandas = "^2.2.2"
 
 
 [build-system]
