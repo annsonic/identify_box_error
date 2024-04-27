@@ -118,11 +118,12 @@ class BoxErrorTypeAnalyzer:
         """ Format the results for the class Recorder to write to the csv file """
         results = []
         for index, cls in enumerate(self.pd_data['cls']):
+            type_name = self.pd_data['bad_box_errors'][index].name
             results.append({
                 'image_file_name': Path(self.gt_data['im_file']).name,
                 'index': index,
-                'object_class': cls,
-                'error_type': self.pd_data['bad_box_errors'][index].name
+                'object_class': self.gt_data['cls'][index] if type_name != 'background' else cls,
+                'error_type': type_name
             })
         for index in self.pd_data['missing_box_errors']:
             results.append({

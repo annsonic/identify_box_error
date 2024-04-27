@@ -114,8 +114,13 @@ def expect_parse(file_name: str):
             {'image_file_name': '2.jpg', 'index': 0, 'object_class': 0, 'error_type': 'background'},
             {'image_file_name': '2.jpg', 'index': 1, 'object_class': 0, 'error_type': 'bad_location'},
             {'image_file_name': '2.jpg', 'index': 2, 'object_class': 1, 'error_type': 'true_positive'},
-            {'image_file_name': '2.jpg', 'index': 0, 'object_class': 0, 'error_type': 'missing'}
-        ],
+            {'image_file_name': '2.jpg', 'index': 0, 'object_class': 0, 'error_type': 'missing'},
+            ],
+        '3.jpg': [
+            {'image_file_name': '3.jpg', 'index': 0, 'object_class': 0, 'error_type': 'wrong_class'},
+            {'image_file_name': '3.jpg', 'index': 1, 'object_class': 0, 'error_type': 'missing'},
+            {'image_file_name': '3.jpg', 'index': 2, 'object_class': 0, 'error_type': 'missing'},
+            ],
     }[file_name]
 
 
@@ -124,7 +129,7 @@ def test_parse_analysis_results(session_setup, box_type: str):
     fetcher = truth_prediction_fetcher(str(pytest.yaml_path), "test", str(pytest.predict_folder_path),
                                        is_obb=(box_type == 'rotated'))
 
-    for _ in range(2):
+    for _ in range(3):
         fact, guess = next(fetcher)
         analyzer = BoxErrorTypeAnalyzer(fact, guess, is_obb=(box_type == 'rotated'))
         analyzer.analyze()
