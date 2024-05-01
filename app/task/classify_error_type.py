@@ -14,13 +14,14 @@ class Annotation:
         return f"<Annotation>name={self.name}, color={self.color}, line_width={self.line_width}"
 
 
-TRUE_POSITIVE = Annotation((0, 255, 0), "true_positive")  # Green
-DUPLICATE = Annotation((29, 170, 255), "duplicate")  # Yellow (Crayola)
-WRONG_CLASS = Annotation((0, 121, 255), "wrong_class")  # Safety Orange
-BAD_LOCATION = Annotation((255, 255, 0), "bad_location")  # Cyan
-WRONG_CLASS_LOCATION = Annotation((220, 209, 255), "wrong_class_location")  # Baby blue
-BACKGROUND = Annotation((255, 128, 0), "background")  # Blue (Crayola)
-MISSING = Annotation((255, 0, 0), "missing")  # Red
+# Color code: RGB
+TRUE_POSITIVE = Annotation((229, 228, 226), "true_positive")  # Platinum
+DUPLICATE = Annotation((247, 127, 190), "duplicate")  # Persian Pink
+WRONG_CLASS = Annotation((137, 207, 240), "wrong_class")  # Baby blue
+BAD_LOCATION = Annotation((195, 176, 145), "bad_location")  # Khaki
+WRONG_CLASS_LOCATION = Annotation((144, 238, 144), "wrong_class_location")  # Light green
+BACKGROUND = Annotation((181, 126, 220), "background")  # Lavender
+MISSING = Annotation((240, 128, 128), "missing")  # Light coral
 GROUND_TRUTH = Annotation((0, 0, 0), "ground_truth", line_width=3)  # Black
 
 IOU_FG_TH = 0.4  # IoU > this threshold is a foreground  # TODO: can be set from GUI
