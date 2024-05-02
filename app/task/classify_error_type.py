@@ -124,14 +124,16 @@ class BoxErrorTypeAnalyzer:
                 'image_file_name': Path(self.gt_data['im_file']).name,
                 'index': index,
                 'object_class': self.gt_data['cls'][index] if type_name != 'background' else cls,
-                'error_type': type_name
+                'error_type': type_name,
+                'confidence': self.pd_data['conf'][index]
             })
         for index in self.pd_data['missing_box_errors']:
             results.append({
                 'image_file_name': Path(self.gt_data['im_file']).name,
                 'index': index,
                 'object_class': self.gt_data['cls'][index],
-                'error_type': MISSING.name
+                'error_type': MISSING.name,
+                'confidence': 0
             })
         return results
 

@@ -8,12 +8,13 @@ import pandas as pd
 
 from app.task.classify_error_type import (TRUE_POSITIVE, DUPLICATE, WRONG_CLASS, BAD_LOCATION,
                                           WRONG_CLASS_LOCATION, BACKGROUND, MISSING)
+from app.utils.metrics import average_precision
 
 
 class Recorder:
     def __init__(self):
-        # Note: `object_class` means the groud truth class. The exception is when the error type is `background`.
-        self.fieldnames = ['image_file_name', 'index', 'object_class', 'error_type']
+        # Note: `object_class` means the ground truth class. The exception is when the error type is `background`.
+        self.fieldnames = ['image_file_name', 'index', 'object_class', 'error_type', 'confidence']
     
     def write_csv(self, csv_path: Union[str, Path], analysis_results: list[dict]):
         with open(csv_path, 'w', newline='') as csvfile:

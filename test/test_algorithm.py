@@ -111,15 +111,15 @@ def expect_parse(file_name: str):
     return {
         '1.jpg': [],
         '2.jpg': [
-            {'image_file_name': '2.jpg', 'index': 0, 'object_class': 0, 'error_type': 'background'},
-            {'image_file_name': '2.jpg', 'index': 1, 'object_class': 0, 'error_type': 'bad_location'},
-            {'image_file_name': '2.jpg', 'index': 2, 'object_class': 1, 'error_type': 'true_positive'},
-            {'image_file_name': '2.jpg', 'index': 0, 'object_class': 0, 'error_type': 'missing'},
+            {'image_file_name': '2.jpg', 'index': 0, 'object_class': 0, 'error_type': 'background', 'confidence': 0.881},
+            {'image_file_name': '2.jpg', 'index': 1, 'object_class': 0, 'error_type': 'bad_location', 'confidence': 0.799},
+            {'image_file_name': '2.jpg', 'index': 2, 'object_class': 1, 'error_type': 'true_positive', 'confidence': 0.697},
+            {'image_file_name': '2.jpg', 'index': 0, 'object_class': 0, 'error_type': 'missing', 'confidence': 0},
             ],
         '3.jpg': [
-            {'image_file_name': '3.jpg', 'index': 0, 'object_class': 0, 'error_type': 'wrong_class'},
-            {'image_file_name': '3.jpg', 'index': 1, 'object_class': 0, 'error_type': 'missing'},
-            {'image_file_name': '3.jpg', 'index': 2, 'object_class': 0, 'error_type': 'missing'},
+            {'image_file_name': '3.jpg', 'index': 0, 'object_class': 0, 'error_type': 'wrong_class', 'confidence': 0.973},
+            {'image_file_name': '3.jpg', 'index': 1, 'object_class': 0, 'error_type': 'missing', 'confidence': 0},
+            {'image_file_name': '3.jpg', 'index': 2, 'object_class': 0, 'error_type': 'missing', 'confidence': 0},
             ],
     }[file_name]
 
