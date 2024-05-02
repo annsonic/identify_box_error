@@ -150,3 +150,39 @@ def obb_iou(segment1: list[np.array], segment2: list[np.array], eps=1e-7) -> np.
                              for seg1 in segment1])
 
     return intersection / (area_1 + area_2 + eps - intersection)
+
+
+def average_precision(list_tp: list[bool], list_fp: list[bool], list_fn: list[bool], eps=1e-12):
+    """
+    In COCO mAP, a 101-point interpolated AP definition is used in the calculation.
+    The zigzag precision-recall curve is smoothed-out into step functions (by replacing each precision value with
+    the maximum precision value to the right of that recall level).
+    Reference:
+        https://github.com/rafaelpadilla/review_object_detection_metrics/blob/main/src/evaluators/coco_evaluator.py#L362
+    Args:
+        list_tp (list[bool]): Whether the indexed box marked as true positive
+        list_fp (list[bool]): Whether the indexed box marked as false positive
+        list_fn (list[bool]): Whether the indexed box marked as false negative
+        eps (float): A small value to avoid division by zero
+    Returns:
+        ap (float): Average precision
+        precision (np.array): Precision curve. Length is (true positive + false positive).
+        recall (np.array): Recall curve. Length is true positive.
+        i_pr (np.array): Smoothed precision curve. Length is 101.
+        recall_thresholds (np.array): Points to calculate the smoothed precision value
+    """
+    tp = np.cumsum(list_tp, dtype=float)
+    fp = np.cumsum(list_fp, dtype=float)
+    recall = tp / (sum(list_tp) + sum(list_fn) + eps)
+    precision = tp / (tp + fp + eps)
+    recall_thresholds = np.linspace(0.0,
+                                    1.00,
+                                    int(np.round((1.00 - 0.0) / 0.01)) + 1,  # 101 points
+                                    endpoint=True)
+    # The index of the maximum recall value that is less than the recall threshold
+    rec_idx = np.searchsorted(recall, recall_thresholds, side="left")
+    # Make precision monotonically decreasing
+    i_pr = np.maximum.accumulate(precision[::-1])[::-1]
+    i_pr = np.array([i_pr[r] if r < len(i_pr) else 0 for r in rec_idx])
+    
+    return np.mean(i_pr), precision, recall, i_pr, recall_thresholds
