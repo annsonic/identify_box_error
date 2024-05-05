@@ -173,6 +173,7 @@ class PolygonAnnotator:
         self.label_folder = Path(label_folder)
         self.prediction_folder = Path(prediction_folder)
         self.dst_img_folder = Path(dst_img_folder)
+        self.dst_img_folder.mkdir(parents=True, exist_ok=True)
         self.analyzed = analyzed
 
     def run(self):
@@ -184,6 +185,19 @@ class PolygonAnnotator:
             pd_classes, pd_boxes, _ = load_one_label_file(str(self.prediction_folder / txt_file_name), has_conf=True)
             img = cv2.imread(str(self.src_img_folder / str(image_file_name)))
             size = (img.shape[0], img.shape[1])
+            if gt_boxes.shape[1] == 4:
+                gt_boxes = xywh2xyxyxyxy(gt_boxes)
+            elif gt_boxes.shape[1] == 8:
+                gt_boxes = gt_boxes.reshape(-1, 4, 2)
+            if pd_boxes.shape[1] == 4:
+                pd_boxes = xywh2xyxyxyxy(pd_boxes)
+            elif pd_boxes.shape[1] == 8:
+                pd_boxes = pd_boxes.reshape(-1, 4, 2)
+            if gt_boxes.size:
+                gt_boxes = denormalize_segment(gt_boxes, size)
+            if pd_boxes.size:
+                pd_boxes = denormalize_segment(pd_boxes, size)
+            annotations = []
             for _, row in df.iterrows():
                 if row['error_type'] == 'missing':  # Read the ground truth label
                     polygon = gt_boxes[row['index']]
@@ -191,9 +205,5 @@ class PolygonAnnotator:
                 else:  # Read the prediction label
                     polygon = pd_boxes[row['index']]
                     color = error_type_mapper[row['error_type']].color
-                # Convert the rectangle to contour points
-                if polygon.shape[1] == 4:
-                    polygon = xywh2xyxyxyxy(polygon)
-                # denormalize the box
-                polygon = denormalize_segment(polygon, size)
-            # print(points)
+                annotations.append((polygon, color))
+            annotate_polygon(img, annotations, str(self.dst_img_folder / image_file_name))

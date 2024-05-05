@@ -34,7 +34,7 @@ def denormalize_segment(segments: list[np.array], shape: tuple[int, int]) -> np.
     segments = np.array(segments)
     segments[:, :, 0] *= shape[0]
     segments[:, :, 1] *= shape[1]
-    return segments
+    return segments.astype(int)
 
 
 def sort_counter_clockwise_in_numpy_coord(vertices: np.array) -> np.array:

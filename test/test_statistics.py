@@ -177,9 +177,9 @@ def test_polygon_annotator(session_setup, box_type: str):
 
     recorder.write_csv(TMP / 'test.csv', data)
     annotator = PolygonAnnotator(
-        src_img_folder=str(TMP / 'ground_truth' / 'images'),
+        src_img_folder=str(TMP / 'ground_truth' / 'images' / 'test'),
         label_folder=str(TMP / 'ground_truth' / 'labels' / 'test'),
         prediction_folder=str(TMP / 'predicted' / 'labels'),
-        dst_img_folder=str(TMP / 'predicted' / 'images'),
+        dst_img_folder=str(TMP / 'predicted' / 'analyzed'),
         analyzed=recorder.read_csv(TMP / 'test.csv'))
     annotator.run()

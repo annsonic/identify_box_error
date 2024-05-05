@@ -129,7 +129,7 @@ def load_one_label_file(file: str, has_conf=False
         has_conf (bool): if True, read the `conf` confidence score.
     Return:
         classes (ndarray): ndarray(n, 1) in int
-        boxes (ndarray): ndarray(n, 4) in float
+        boxes (ndarray): ndarray(n, 4) or (n, 8) in float
         confs (ndarray): ndarray(n, 1) in float
     """
     with warnings.catch_warnings():

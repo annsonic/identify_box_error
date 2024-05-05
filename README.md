@@ -10,6 +10,9 @@ Inspired by the paper,
   year      = {2020},
 }
 
+And this reference
+https://medium.com/data-science-at-microsoft/error-analysis-for-object-detection-models-338cb6534051
+
 ## Installation
 ```
 $ conda create --name box_analyze python=3.12
