@@ -1,8 +1,10 @@
 import numpy as np
 import pytest
 
-from app.task.study_in_statistics import recorder, Statistician
+from app.task.classify_error_type import BoxErrorTypeAnalyzer
+from app.task.study_in_statistics import recorder, Statistician, PolygonAnnotator
 from app.utils.metrics import average_precision
+from app.utils.parse import truth_prediction_fetcher
 from conftest import TMP
 
 
@@ -64,7 +66,7 @@ def test_pie_chart(target_classes: list[int], case: int):
     data = get_error_types()
     recorder.write_csv(TMP / 'test.csv', data)
 
-    proportions = Statistician(output_folder_path=TMP).pie(
+    proportions = Statistician(output_folder_path=TMP).error_proportion(
         recorder.read_csv(TMP / 'test.csv'), target_classes)
 
     assert proportions.to_dict(into=dict) == get_expected_proportions(case)
@@ -84,7 +86,7 @@ def test_sort(target_classes: list[int], case: int):
         2: {}  # has true_positive, no errors
     }
 
-    table = Statistician(output_folder_path=TMP).histogram(
+    table = Statistician(output_folder_path=TMP).sort_by_errors_per_image(
         recorder.read_csv(TMP / 'test.csv'), target_classes)
 
     assert table.to_dict(into=dict) == answer[case]
@@ -133,6 +135,17 @@ def test_average_precision(case: dict):
     assert np.allclose(smooth_p, case['smoothed_precision'], atol=1e-4)
 
 
+def test_map():
+    answer = {0: (0.5 * 25) / 101.0, 1: 100 / 101.0}
+    data = get_error_types()
+    recorder.write_csv(TMP / 'test.csv', data)
+    output = Statistician(output_folder_path=TMP).map(
+        recorder.read_csv(TMP / 'test.csv'), target_classes=[0, 1], pr_curve_name='map.png')
+
+    for key, value in answer.items():
+        assert abs(output[key] - value) < 1e-4
+
+
 @pytest.mark.parametrize("target_classes, num_classes, expected", [
     (None, 2, {'missing': 0.18564356, 'background': 0.0, 'bad_location': 0.0, 'duplicate': 0.0,
                'wrong_class': 0.06188119, 'wrong_class_location': 0.0}),
@@ -151,8 +164,22 @@ def test_delta_mean_average_precision(target_classes: list[int], num_classes: in
         assert abs(output[key] - value) < 1e-4
 
 
-def test_bar():
-    data = get_error_types()
+@pytest.mark.parametrize("box_type", ['regular', 'rotated'])
+def test_polygon_annotator(session_setup, box_type: str):
+    data = []
+    fetcher = truth_prediction_fetcher(str(pytest.yaml_path), "test", str(pytest.predict_folder_path),
+                                       is_obb=(box_type == 'rotated'))
+    for _ in range(7):
+        fact, guess = next(fetcher)
+        analyzer = BoxErrorTypeAnalyzer(fact, guess, is_obb=(box_type == 'rotated'))
+        analyzer.analyze()
+        data.extend(analyzer.parse_analysis_results())
+
     recorder.write_csv(TMP / 'test.csv', data)
-    output = Statistician(output_folder_path=TMP).bar_chart_delta_map(
-        recorder.read_csv(TMP / 'test.csv'), target_classes=None, num_classes=2)
+    annotator = PolygonAnnotator(
+        src_img_folder=str(TMP / 'ground_truth' / 'images'),
+        label_folder=str(TMP / 'ground_truth' / 'labels' / 'test'),
+        prediction_folder=str(TMP / 'predicted' / 'labels'),
+        dst_img_folder=str(TMP / 'predicted' / 'images'),
+        analyzed=recorder.read_csv(TMP / 'test.csv'))
+    annotator.run()

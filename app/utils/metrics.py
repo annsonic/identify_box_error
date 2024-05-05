@@ -165,7 +165,7 @@ def average_precision(list_tp: list[bool], list_fp: list[bool], list_fn: list[bo
         list_fn (list[bool]): Whether the indexed box marked as false negative
         eps (float): A small value to avoid division by zero
     Returns:
-        ap (float): Average precision
+        ap (float): Average precision value
         precision (np.array): Precision curve. Length is (true positive + false positive).
         recall (np.array): Recall curve. Length is true positive.
         i_pr (np.array): Smoothed precision curve. Length is 101.
