@@ -123,7 +123,7 @@ class BoxErrorTypeAnalyzer:
             results.append({
                 'image_file_name': Path(self.gt_data['im_file']).name,
                 'index': index,
-                'object_class': self.gt_data['cls'][index] if type_name != 'background' else cls,
+                'object_class': self.gt_data['cls'][index] if type_name not in ['background', 'duplicate'] else cls,
                 'error_type': type_name,
                 'confidence': self.pd_data['conf'][index]
             })
