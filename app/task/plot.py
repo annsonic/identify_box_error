@@ -85,7 +85,9 @@ def annotate_polygon(img, data: list[tuple[np.array, tuple]], dst_file_name: str
     copy = img.copy()
     for points, color in data:
         cv2.fillPoly(copy, [points], color)
-        cv2.polylines(copy, [points], isClosed=True, color=color, thickness=2)
     alpha = 0.6
     overlay = cv2.addWeighted(img, alpha, copy, 1-alpha, gamma=0)
+    # Enhance the boundary
+    for points, color in data:
+        cv2.polylines(overlay, [points], isClosed=True, color=color, thickness=2)
     cv2.imwrite(dst_file_name, overlay)

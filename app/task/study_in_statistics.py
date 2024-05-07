@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Union
 
 import cv2
+import numpy as np
 import pandas as pd
 
 from app.task.classify_error_type import (TRUE_POSITIVE, DUPLICATE, WRONG_CLASS, BAD_LOCATION,
@@ -176,6 +177,23 @@ class PolygonAnnotator:
         self.dst_img_folder.mkdir(parents=True, exist_ok=True)
         self.analyzed = analyzed
 
+    def process_boxes(self, boxes: np.array, size: tuple[int, int]) -> np.array:
+        """ Get the box corner points and convert the value to the original resolution. 
+        Args:
+            boxes (np.array): regular box dim=(n, 4); rotated box dim=(n, 8)
+            size tuple[int, int]: the image (height, width)
+        Returns:
+            boxes (np.array): dim=(n, 4, 2)
+        """
+        if boxes.shape[1] == 4:
+            boxes = xywh2xyxyxyxy(boxes)
+        elif boxes.shape[1] == 8:
+            boxes = boxes.reshape(-1, 4, 2)
+        if boxes.size:
+            boxes = denormalize_segment(boxes, size)
+
+        return boxes
+        
     def run(self):
         grouped = self.analyzed.groupby('image_file_name')
 
@@ -185,18 +203,8 @@ class PolygonAnnotator:
             pd_classes, pd_boxes, _ = load_one_label_file(str(self.prediction_folder / txt_file_name), has_conf=True)
             img = cv2.imread(str(self.src_img_folder / str(image_file_name)))
             size = (img.shape[0], img.shape[1])
-            if gt_boxes.shape[1] == 4:
-                gt_boxes = xywh2xyxyxyxy(gt_boxes)
-            elif gt_boxes.shape[1] == 8:
-                gt_boxes = gt_boxes.reshape(-1, 4, 2)
-            if pd_boxes.shape[1] == 4:
-                pd_boxes = xywh2xyxyxyxy(pd_boxes)
-            elif pd_boxes.shape[1] == 8:
-                pd_boxes = pd_boxes.reshape(-1, 4, 2)
-            if gt_boxes.size:
-                gt_boxes = denormalize_segment(gt_boxes, size)
-            if pd_boxes.size:
-                pd_boxes = denormalize_segment(pd_boxes, size)
+            gt_boxes = self.process_boxes(gt_boxes, size)
+            pd_boxes = self.process_boxes(pd_boxes, size)
             annotations = []
             for _, row in df.iterrows():
                 if row['error_type'] == 'missing':  # Read the ground truth label
