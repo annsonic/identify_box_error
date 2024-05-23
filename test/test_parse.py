@@ -218,14 +218,15 @@ def partial_expected_fetcher_output():
 
 @pytest.mark.parametrize("box_type", ['regular', 'rotated'])
 def test_fetcher(session_setup, box_type: str):
-    from app.utils.parse import truth_prediction_fetcher
+    from app.utils.parse import TruthPredictionFetcher
 
-    fetcher = truth_prediction_fetcher(str(pytest.yaml_path), "test", str(pytest.predict_folder_path),
-                                       is_obb=(box_type == 'rotated'))
+    fetcher = TruthPredictionFetcher(str(pytest.yaml_path), "test", str(pytest.predict_folder_path),
+                                     is_obb=(box_type == 'rotated'))
     answers = partial_expected_fetcher_output()
-    
-    for index in range(2):
-        fact, guess = next(fetcher)
+
+    for index, (fact, guess) in enumerate(fetcher):
+        if index == 2:
+            break
         expected_fact, expected_guess = answers[index]
 
         keys_to_compare = ["normalized", "bbox_format"]

@@ -5,19 +5,20 @@ import pytest
 from app.task.classify_error_type import (BoxErrorTypeAnalyzer, TRUE_POSITIVE, DUPLICATE, WRONG_CLASS, BAD_LOCATION,
                                           WRONG_CLASS_LOCATION, BACKGROUND,)
 from app.utils.metrics import bbox_ioa
-from app.utils.parse import truth_prediction_fetcher
+from app.utils.parse import TruthPredictionFetcher
 
 
 @pytest.mark.parametrize("box_type", ['regular'])
 def test_iou(session_setup, box_type: str):
     """ Test the calculation of the intersection over union of two boxes """
-    fetcher = truth_prediction_fetcher(str(pytest.yaml_path), "test", str(pytest.predict_folder_path))
-    next(fetcher)
-    fact, guess = next(fetcher)
-    iou = bbox_ioa(fact['bboxes'], guess['bboxes'], iou=True)
+    fetcher = TruthPredictionFetcher(str(pytest.yaml_path), "test", str(pytest.predict_folder_path))
 
-    assert iou.shape == (fact['bboxes'].shape[0], guess['bboxes'].shape[0])
-    assert np.allclose(iou, np.array([[0.033033, 0.0, 0.0], [0.0, 0.11643829, 0.08390914], [0.0, 0.0, 1.0]]))
+    for index, (fact, guess) in enumerate(fetcher):
+        if index == 1:
+            iou = bbox_ioa(fact['bboxes'], guess['bboxes'], iou=True)
+            assert iou.shape == (fact['bboxes'].shape[0], guess['bboxes'].shape[0])
+            assert np.allclose(iou, np.array([[0.033033, 0.0, 0.0], [0.0, 0.11643829, 0.08390914], [0.0, 0.0, 1.0]]))
+            break
 
 
 def get_expected_answer(file_name: str):
@@ -55,11 +56,10 @@ def get_expected_answer(file_name: str):
 
 @pytest.mark.parametrize("box_type", ['regular', 'rotated'])
 def test_algorithm(session_setup, box_type: str):
-    fetcher = truth_prediction_fetcher(str(pytest.yaml_path), "test", str(pytest.predict_folder_path),
-                                       is_obb=(box_type == 'rotated'))
+    fetcher = TruthPredictionFetcher(str(pytest.yaml_path), "test", str(pytest.predict_folder_path),
+                                     is_obb=(box_type == 'rotated'))
     
-    for _ in range(7):
-        fact, guess = next(fetcher)
+    for (fact, guess) in fetcher:
         BoxErrorTypeAnalyzer(fact, guess, is_obb=(box_type == 'rotated')).analyze()
 
         expected = get_expected_answer(Path(fact['im_file']).name)
@@ -126,11 +126,12 @@ def expect_parse(file_name: str):
 
 @pytest.mark.parametrize("box_type", ['regular'])
 def test_parse_analysis_results(session_setup, box_type: str):
-    fetcher = truth_prediction_fetcher(str(pytest.yaml_path), "test", str(pytest.predict_folder_path),
-                                       is_obb=(box_type == 'rotated'))
+    fetcher = TruthPredictionFetcher(str(pytest.yaml_path), "test", str(pytest.predict_folder_path),
+                                     is_obb=(box_type == 'rotated'))
 
-    for _ in range(3):
-        fact, guess = next(fetcher)
+    for index, (fact, guess) in enumerate(fetcher):
+        if index == 3:
+            break
         analyzer = BoxErrorTypeAnalyzer(fact, guess, is_obb=(box_type == 'rotated'))
         analyzer.analyze()
         outputs = analyzer.parse_analysis_results()
