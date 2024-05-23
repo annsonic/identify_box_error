@@ -71,6 +71,7 @@ class BoxErrorTypeAnalyzer:
                 self.pd_data['bad_box_errors'][index_candidate] = TRUE_POSITIVE
             else:
                 self.pd_data['bad_box_errors'][index_candidate] = WRONG_CLASS
+                self.pd_data['corrected_cls'][index_candidate] = self.gt_data['cls'][index_gt]
             self.matched_gt.add(index_gt)
 
     def find_duplicate(self):
@@ -113,6 +114,7 @@ class BoxErrorTypeAnalyzer:
                 self.pd_data['bad_box_errors'][index_pd] = BAD_LOCATION
             else:
                 self.pd_data['bad_box_errors'][index_pd] = WRONG_CLASS_LOCATION
+            self.pd_data['corrected_cls'][index_pd] = self.gt_data['cls'][index_gt]
             self.matched_gt.add(index_gt)
         if self.num_gt:
             self.pd_data['missing_box_errors'] = sorted(list(set(range(self.num_gt)) - self.matched_gt))
@@ -127,7 +129,7 @@ class BoxErrorTypeAnalyzer:
             results.append({
                 'image_file_name': Path(self.gt_data['im_file']).name,
                 'index': index,
-                'object_class': self.gt_data['cls'][index] if type_name not in ['background', 'duplicate'] else cls,
+                'object_class': self.pd_data['corrected_cls'][index],
                 'error_type': type_name,
                 'confidence': self.pd_data['conf'][index]
             })

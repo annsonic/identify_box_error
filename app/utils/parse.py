@@ -166,6 +166,7 @@ def txt_load(folder: str, has_conf=False, is_obb: bool = False) -> dict[str, dic
                 'cls': ndarray(n, ) in int
                 'normalized': True
                 'segments': list of ndarray(4, 2) in float. The vertices are arranged in a counter-clockwise order.
+                'corrected_cls': copied ground truth class. ndarray(n, ) in int
             }
     n is the number of bounding boxes in the image.
     """
@@ -193,6 +194,7 @@ def txt_load(folder: str, has_conf=False, is_obb: bool = False) -> dict[str, dic
             "bbox_format": "xyxy",
             "bad_box_errors": [],  # list item: type of error
             "missing_box_errors": [],  # list item: index of ground truth boxes
+            "corrected_cls": cls,  # list item: corrected object class
         }
 
     return labels
