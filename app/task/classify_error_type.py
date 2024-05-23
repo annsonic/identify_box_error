@@ -34,9 +34,11 @@ class BoxErrorTypeAnalyzer:
 
         self.gt_data, self.pd_data = gt_data, pd_data
         if is_obb:
-            self.num_gt, self.num_pd = len(gt_data['segments']), len(pd_data['segments'])
+            self.num_gt = len(gt_data['segments'])
+            self.num_pd = len(pd_data['segments']) if pd_data else 0
         else:
-            self.num_gt, self.num_pd = gt_data['bboxes'].shape[0], pd_data['bboxes'].shape[0]
+            self.num_gt = gt_data['bboxes'].shape[0]
+            self.num_pd = pd_data['bboxes'].shape[0] if pd_data else 0
         # Initialize the storage
         self.pd_data['bad_box_errors'] = [None] * self.num_pd
         self.matched_gt = set()  # item: index of the ground truth box
@@ -118,6 +120,8 @@ class BoxErrorTypeAnalyzer:
     def parse_analysis_results(self) -> list[dict]:
         """ Format the results for the class Recorder to write to the csv file """
         results = []
+        if self.num_pd == 0:
+            return results
         for index, cls in enumerate(self.pd_data['cls']):
             type_name = self.pd_data['bad_box_errors'][index].name
             results.append({
