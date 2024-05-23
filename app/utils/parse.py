@@ -94,7 +94,7 @@ def cache_load(subset: str, yaml_data: dict, is_obb: bool = False) -> list[dict]
     {
         'bbox_format': 'xyxy',
         'bboxes': ndarray(n, 4) in float
-        'cls': ndarray(n, 1) in int
+        'cls': ndarray(n, ) in int
         'im_file': str -> absolute path
         'normalized': True
         'shape': tuple(int, int) -> (height, width)
@@ -112,7 +112,7 @@ def cache_load(subset: str, yaml_data: dict, is_obb: bool = False) -> list[dict]
     [cache.pop(k) for k in ("hash", "version", "msgs") if k in cache.keys()]  # remove items
     for data in cache["labels"]:
         data['bbox_format'] = "xyxy"
-        data['cls'] = data['cls'].astype(int)
+        data['cls'] = data['cls'].flatten().astype(int)
         if is_obb:
             data['segments'] = [sort_counter_clockwise_in_numpy_coord(box) for box in data['segments']]
         else:
@@ -128,7 +128,7 @@ def load_one_label_file(file: str, has_conf=False
         file (str): path of the text file.
         has_conf (bool): if True, read the `conf` confidence score.
     Return:
-        classes (ndarray): ndarray(n, 1) in int
+        classes (ndarray): ndarray(n, ) in int
         boxes (ndarray): ndarray(n, 4) or (n, 8) in float
         confs (ndarray): ndarray(n, 1) in float
     """
@@ -163,7 +163,7 @@ def txt_load(folder: str, has_conf=False, is_obb: bool = False) -> dict[str, dic
             filename: {
                 'bbox_format': 'xyxy',
                 'bboxes': ndarray(n, 4) in float
-                'cls': ndarray(n, 1) in float
+                'cls': ndarray(n, ) in int
                 'normalized': True
                 'segments': list of ndarray(4, 2) in float. The vertices are arranged in a counter-clockwise order.
             }
