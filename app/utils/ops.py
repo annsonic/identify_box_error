@@ -27,7 +27,7 @@ def denormalize_segment(segments: list[np.array], shape: tuple[int, int]) -> np.
     """
     Args:
         segments (list[np.array]): A list of numpy arrays representing the segments.
-        shape (tuple[int, int]): The shape(height, width) of the image containing the segments.
+        shape (tuple[int, int]): The shape(width, height) of the image containing the segments.
     Returns:
         list[np.array]: A list of numpy arrays representing the denormalized segments.
     """
