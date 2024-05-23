@@ -200,23 +200,29 @@ def txt_load(folder: str, has_conf=False, is_obb: bool = False) -> dict[str, dic
     return labels
 
 
-def truth_prediction_fetcher(yaml_path: str, subset: str, predict_folder_path: str, is_obb: bool = False
-                             ) -> Generator[tuple[dict, dict], None, None]:
-    """
-    Args:
-        yaml_path (str): path of the yaml file.
-        subset (str): range['train', 'val', 'test']
-        predict_folder_path (str): path of the prediction folder which stores the inference text files.
-        is_obb (bool): if True, load the segments instead of boxes for oriented bounding boxes.
-    Returns:
-        tuple(dict, dict): (ground truth, prediction)
-    """
-    yaml_data = yaml_load(yaml_path)
-    facts = cache_load(subset, yaml_data, is_obb=is_obb)
-    guesses = txt_load(predict_folder_path, has_conf=True, is_obb=is_obb)
-    assert len(facts) == len(guesses), f"Number of files in {subset} and predictions do not match."
+class TruthPredictionFetcher:
+    def __init__(self, yaml_path: str, subset: str, predict_folder_path: str, is_obb: bool = False):
+        """
+        Args:
+            yaml_path (str): path of the yaml file.
+            subset (str): range['train', 'val', 'test']
+            predict_folder_path (str): path of the prediction folder which stores the inference text files.
+            is_obb (bool): if True, load the segments instead of boxes for oriented bounding boxes.
+        """
+        self.yaml_data = yaml_load(yaml_path)
+        self.facts = cache_load(subset, self.yaml_data, is_obb=is_obb)
+        self.guesses = txt_load(predict_folder_path, has_conf=True, is_obb=is_obb)
+        self.size = len(self.facts)
 
-    for fact in facts:
-        txt_file_name = Path(fact['im_file']).stem + ".txt"
-        guess = guesses[txt_file_name]
-        yield fact, guess
+    def __iter__(self) -> Generator[tuple[dict, dict], None, None]:
+        """
+        Returns:
+            tuple(dict, dict): (ground truth, prediction)
+        """
+        for fact in self.facts:
+            txt_file_name = Path(fact['im_file']).stem + ".txt"
+            guess = self.guesses[txt_file_name] if txt_file_name in self.guesses else {}
+            yield fact, guess
+
+    def __len__(self):
+        return self.size
