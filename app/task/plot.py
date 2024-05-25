@@ -2,8 +2,9 @@ from random import randint
 from pathlib import Path
 from typing import Union
 
-import cv2
 import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon, Rectangle
+import matplotlib.patheffects as patheffects
 import numpy as np
 import pandas as pd
 
@@ -81,18 +82,19 @@ def bar_chart(data: dict, file_path: Path):
     plt.savefig(file_path)
 
 
-def annotate_polygon(img, data: list[tuple[np.array, tuple[int, int, int], str]], dst_file_name: str):
-    """ A general polygon patch. """
-    copy = img.copy()
-    for points, color, name in data:
-        cv2.fillPoly(copy, [points], color)
-    alpha = 0.6
-    overlay = cv2.addWeighted(img, alpha, copy, 1-alpha, gamma=0)
-    # Enhance the boundary
-    for points, color, name in data:
-        cv2.polylines(overlay, [points], isClosed=True, color=color, thickness=2)
-        # Calculate the random offset between points[0] and points[1]
-        text_position = (randint(points[0][0], points[1][0]), randint(points[0][1], points[1][1]))
-        cv2.putText(overlay, name, text_position, cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 3)
-        cv2.putText(overlay, name, text_position, cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0, 0, 0), 1)
-    cv2.imwrite(dst_file_name, overlay)
+def plot_color_legend(colors: list[tuple[int, int, int]], names: list[str], dst_file_name: str):
+    """ Visualize the color legend of the error types. """
+    fig, ax = plt.subplots()
+    ax.set_facecolor('white')
+    height, width = 0.1, 0.4
+    for i, (color, name) in enumerate(zip(colors, names)):
+        color = (color[0] / 255.0, color[1] / 255.0, color[2] / 255.0)
+        rect = Rectangle((0, i * height), width, height, color=color)
+        ax.add_patch(rect)
+        ax.text(width + 0.05, (i+0.5) * height, name, fontsize=16, color='black', weight='regular',
+                verticalalignment='top')
+    ax.set_ylim(0, (len(names) + 0.5) * height)
+    plt.axis('off')
+    plt.title('Color Legend of the Error Types', fontsize=20, fontweight='bold')
+    plt.tight_layout()
+    plt.savefig(dst_file_name)
