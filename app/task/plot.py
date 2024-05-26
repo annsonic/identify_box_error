@@ -12,6 +12,9 @@ import pandas as pd
 def pie_chart(fractions: pd.Series, colors: list[tuple], hatches: list[str], type_names: list[str], file_path: Path):
     """ Draw a pie chart """
     fig, ax = plt.subplots()
+    if not fractions.any():
+        plt.text(0.5, 0.5, 'No Error Type', horizontalalignment='center', verticalalignment='center',
+                 transform=plt.gca().transAxes)
     wedges, texts, autotexts = ax.pie(fractions, autopct='%1.1f%%', colors=colors,
                                       wedgeprops=dict(width=0.6), hatch=hatches)
     bbox_props = dict(boxstyle="square,pad=0.3", fc="w", ec="k", lw=0.72)
@@ -22,10 +25,12 @@ def pie_chart(fractions: pd.Series, colors: list[tuple], hatches: list[str], typ
         ang = (p.theta2 - p.theta1) / 2. + p.theta1 + 1e-2  # 1e-2 is the offset for the case(100% proportion)
         y = np.sin(np.deg2rad(ang))
         x = np.cos(np.deg2rad(ang))
-
         horizontal_alignment = {-1: "right", 1: "left"}[int(np.sign(x))]
         connection_style = f"angle,angleA=0,angleB={ang}"
         kw["arrowprops"].update({"connectionstyle": connection_style})
+        if fractions[i] < 0.01:
+            print(f'[Ignore] Type {type_names[i]} has a proportion({fractions[i]}) less than 0.01%')
+            continue
         ax.annotate(type_names[i], xy=(x, y), xytext=(1.05 * np.sign(x), 1.4 * y),
                     horizontalalignment=horizontal_alignment, **kw)
     ax.set_title('Error Type Distribution')
@@ -37,9 +42,8 @@ def histogram(x: list, x_max: Union[int, float], file_path: Path):
     plt.clf()
     plt.hist(x=x, bins=range(0, int(x_max) + 2), histtype='bar', color='skyblue',
              align='left', rwidth=0.5)
-    # Set the tick value type to integer
-    plt.xticks(range(0, int(x_max) + 2))
-    plt.yticks(range(0, len(x) + 2))
+    if x_max >= 10:
+        plt.xticks(range(0, int(x_max) + 2, 5))
     plt.xlabel('Number of Errors per Image')
     plt.ylabel('Frequency')
     plt.title('Error Frequency Distribution')
@@ -80,6 +84,21 @@ def bar_chart(data: dict, file_path: Path):
     plt.title('Error Type Impact on mAP')
     plt.tight_layout()
     plt.savefig(file_path)
+
+
+def annotate_polygon(img, data: list[tuple[np.array, tuple[int, int, int], str]], dst_file_name: str):
+    """ A general polygon patch. """
+    fig, ax = plt.subplots()
+    ax.imshow(img)
+    for points, color, name in data:
+        color = (color[0] / 255.0, color[1] / 255.0, color[2] / 255.0)
+        poly = Polygon(points, edgecolor=color, facecolor=color, alpha=0.6)
+        ax.add_patch(poly)
+        text_position = (randint(points[0][0], points[1][0]), randint(points[0][1], points[1][1]))
+        ax.text(text_position[0], text_position[1], name, fontsize=12, color='black', weight='bold',
+                path_effects=[patheffects.withStroke(linewidth=6, foreground=color, capstyle="round")])
+
+    plt.savefig(dst_file_name)
 
 
 def plot_color_legend(colors: list[tuple[int, int, int]], names: list[str], dst_file_name: str):
