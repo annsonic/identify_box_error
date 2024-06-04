@@ -28,8 +28,8 @@ def pie_chart(fractions: pd.Series, colors: list[tuple], hatches: list[str], typ
         horizontal_alignment = {-1: "right", 1: "left"}[int(np.sign(x))]
         connection_style = f"angle,angleA=0,angleB={ang}"
         kw["arrowprops"].update({"connectionstyle": connection_style})
-        if fractions[i] < 0.01:
-            print(f'[Ignore] Type {type_names[i]} has a proportion({fractions[i]}) less than 0.01%')
+        if fractions.iloc[i] < 0.01:
+            print(f'[Ignore] Type {type_names[i]} has a proportion({fractions.iloc[i]}) less than 1%')
             continue
         ax.annotate(type_names[i], xy=(x, y), xytext=(1.05 * np.sign(x), 1.4 * y),
                     horizontalalignment=horizontal_alignment, **kw)
