@@ -58,15 +58,15 @@ class Statistician:
         self.df = df[df['error_type'] != 'true_positive']
         self.fp_names = ['background', 'bad_location', 'duplicate', 'wrong_class', 'wrong_class_location']
     
-    def error_proportion(self, target_classes: list[int] = None) -> tuple[pd.Series, str]:
+    def error_proportion(self, target_classes: list[int] = None) -> pd.Series:
         """ Calculate the proportion of each error type and draw a pie chart.
-        The pie chart will be saved in the self.output_folder_path folder.
+        The pie chart will be saved in the `self.output_folder_path / error_proportion` folder.
         Args:
             target_classes (list[int]): The id of classes to be analyzed.
         Returns:
             pd.Series: The proportion of each error type.
-            str: The file name of the pie chart.
         """
+        (self.output_folder_path / 'error_proportion').mkdir(parents=True, exist_ok=True)
         data = self.df.copy()
 
         file_name = 'error_type_pie.png'
@@ -79,8 +79,8 @@ class Statistician:
         colors = [error_type_mapper[x].color for x in type_names]
         colors = [(x[0] / 255.0, x[1] / 255.0, x[2] / 255.0) for x in colors]
         hatches = ['/' if i % 2 == 0 else '' for i in range(len(type_names))]
-        pie_chart(fractions, colors, hatches, type_names, self.output_folder_path / file_name)
-        return fractions, file_name
+        pie_chart(fractions, colors, hatches, type_names, self.output_folder_path / 'error_proportion' / file_name)
+        return fractions
 
     def sort_by_errors_per_image(self, target_classes: list[int] = None) -> pd.Series:
         """ Count the number of errors per image and sort the result in descending order.
@@ -89,6 +89,7 @@ class Statistician:
         Returns:
             pd.Series: The number of errors per image.
         """
+        (self.output_folder_path / 'errors_per_image').mkdir(parents=True, exist_ok=True)
         data = self.df.copy()
         file_name = 'error_type_histogram.png'
         if target_classes:
@@ -101,8 +102,8 @@ class Statistician:
 
         data = result.tolist()
         bins = max(data) if data else 10
-        histogram(data, bins, self.output_folder_path / file_name)
-        return result
+        histogram(data, bins, self.output_folder_path / 'errors_per_image' / file_name)
+        return result.to_frame('error_count').sort_values('error_count', ascending=False)
     
     def map(self, data: pd.DataFrame, target_classes: list[int], pr_curve_name: str = None) -> dict[int, float]:
         """ Calculate average precision of each class. Optionally, draw the PR curve.
@@ -150,6 +151,7 @@ class Statistician:
         Returns:
             dict[str, float]: The delta-AP for each error type.
         """
+        (self.output_folder_path / 'impact').mkdir(parents=True, exist_ok=True)
         file_name = 'delta_map.png'
         if target_classes:
             data = self.df_with_positive[self.df_with_positive['object_class'].isin(target_classes)]
@@ -170,7 +172,7 @@ class Statistician:
         baseline = maps.pop('baseline')
         for error_name, m_ap in maps.items():
             maps[error_name] = m_ap - baseline
-        bar_chart(maps, self.output_folder_path / file_name)
+        bar_chart(maps, self.output_folder_path / 'impact' / file_name)
 
         return maps
 
