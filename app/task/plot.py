@@ -11,6 +11,7 @@ import pandas as pd
 
 def pie_chart(fractions: pd.Series, colors: list[tuple], hatches: list[str], type_names: list[str], file_path: Path):
     """ Draw a pie chart """
+    plt.close()
     fig, ax = plt.subplots()
     if not fractions.any():
         plt.text(0.5, 0.5, 'No Error Type', horizontalalignment='center', verticalalignment='center',
@@ -39,7 +40,7 @@ def pie_chart(fractions: pd.Series, colors: list[tuple], hatches: list[str], typ
 
 def histogram(x: list, x_max: Union[int, float], file_path: Path):
     """ Draw a histogram """
-    plt.clf()
+    plt.close()
     plt.hist(x=x, bins=range(0, int(x_max) + 2), histtype='bar', color='skyblue',
              align='left', rwidth=0.5)
     if x_max >= 10:
@@ -56,7 +57,7 @@ def histogram(x: list, x_max: Union[int, float], file_path: Path):
 
 def line_chart(data: dict, file_path: Path):
     """ Draw a line chart """
-    plt.clf()
+    plt.close()
     for class_id, (r, p, r_interp, p_interp) in data.items():
         plt.plot(r, p, color='black')
         if len(p) < 11:  # For the sparse data, annotate the data points
@@ -73,7 +74,7 @@ def line_chart(data: dict, file_path: Path):
 
 
 def bar_chart(data: dict, file_path: Path):
-    plt.clf()
+    plt.close()
     plt.bar(list(data.keys()), list(data.values()), color='grey', hatch='/')
     plt.xticks(rotation=15)
     plt.xlabel('Error Types')
@@ -88,6 +89,7 @@ def bar_chart(data: dict, file_path: Path):
 
 def annotate_polygon(img, data: list[tuple[np.array, tuple[int, int, int], str]], dst_file_name: str):
     """ A general polygon patch. """
+    plt.close()
     fig, ax = plt.subplots()
     ax.imshow(img)
     for points, color, name in data:
@@ -97,12 +99,14 @@ def annotate_polygon(img, data: list[tuple[np.array, tuple[int, int, int], str]]
         text_position = (randint(points[0][0], points[1][0]), randint(points[0][1], points[1][1]))
         ax.text(text_position[0], text_position[1], name, fontsize=12, color='black', weight='bold',
                 path_effects=[patheffects.withStroke(linewidth=6, foreground=color, capstyle="round")])
-
-    plt.savefig(dst_file_name)
+    plt.axis('off')
+    plt.tight_layout(pad=0)
+    plt.savefig(dst_file_name, bbox_inches='tight', pad_inches=0)
 
 
 def plot_color_legend(colors: list[tuple[int, int, int]], names: list[str], dst_file_name: str):
     """ Visualize the color legend of the error types. """
+    plt.close()
     fig, ax = plt.subplots()
     ax.set_facecolor('white')
     height, width = 0.1, 0.4
@@ -110,10 +114,10 @@ def plot_color_legend(colors: list[tuple[int, int, int]], names: list[str], dst_
         color = (color[0] / 255.0, color[1] / 255.0, color[2] / 255.0)
         rect = Rectangle((0, i * height), width, height, color=color)
         ax.add_patch(rect)
-        ax.text(width + 0.05, (i+0.5) * height, name, fontsize=16, color='black', weight='regular',
+        ax.text(width + 0.05, (i+0.5) * height, name, fontsize=22, color='black', weight='regular',
                 verticalalignment='top')
     ax.set_ylim(0, (len(names) + 0.5) * height)
     plt.axis('off')
-    plt.title('Color Legend of the Error Types', fontsize=20, fontweight='bold')
-    plt.tight_layout()
+    plt.title('Color Legend of the Error Types', fontsize=22, fontweight='bold')
+    plt.tight_layout(pad=0)
     plt.savefig(dst_file_name)
