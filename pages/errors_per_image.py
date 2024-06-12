@@ -9,7 +9,7 @@ from menu import menu, target_classes_form
 
 @st.experimental_dialog("Visualize the image with error type", width='large')
 def display_annotation_image(anno_file_name: str):
-    left, right = st.columns([0.25, 1])
+    left, right = st.columns([0.5, 1])
     left.image(str(Path(st.session_state.analysis_folder_path) / "images" / "color_legend.png"))
     left.subheader(anno_file_name)
     right.image(str(Path(st.session_state.analysis_folder_path) / "images" / anno_file_name))
